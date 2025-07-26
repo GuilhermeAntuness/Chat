@@ -3,8 +3,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 from langchain.prompts import PromptTemplate
 from langchain.schema import HumanMessage, AIMessage
-from models import llm_gemini
-from schema import schema
+from app.agents.models import llm_gemini
+from app.agents.schema import schema
+
 
 import json
 
@@ -67,11 +68,11 @@ def executar_sql(query):
             return formated_result
     except SQLAlchemyError as error:
         print("Erro ao executar o comando SQL: ", error)
+        print(query)
         return {"erro": error}
 
 
-def gerar_consulta(pergunta):
-
+def gerar_consulta_sql(pergunta):
 
     prompt = PromptTemplate(
         template=template,
@@ -84,9 +85,6 @@ def gerar_consulta(pergunta):
     resposta = json.loads(resposta)
 
     try:
-        return json.loads(resposta)
+        return executar_sql(resposta['query'])
     except json.JSONDecodeError as e:
-        print("Erro ao tentar converter a String para JSON: ", e)
-        quit()
-
-
+        return "Erro ao consultar os dados"

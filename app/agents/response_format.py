@@ -1,7 +1,8 @@
-from click import prompt
+from app.agents.models import llm
+from app.agents.sql_constructor import gerar_consulta_sql
+from langchain.prompts import PromptTemplate
+from langchain.schema import HumanMessage
 
-from models import client
-from sql_constructor import gerar_consulta
 
 template = """
 Você é um agente cujo trabalho é receber uma pergunta que o usuário fez, receber os dados que estão associados à pergunta dele num formato de lista e formatar um texto sucinto, mas explicativo e humanizado, referente aos dados dessa lista. 
@@ -14,27 +15,17 @@ Aqui está a resposta:
 {resultado}
 """
 
-def gerar_resposta(question):
-        # Gera a consulta SQL
-        consulta_sql = gerar_consulta(question)
+def gerar_resposta(pergunta):
+    prompt = PromptTemplate(
+        template=template,
+        input_variables=["pergunta", "resultado"]
+    )
 
-        # Formata o prompt a partir do template
-        prompt_formatado = template.format(pergunta=question, resultado=consulta_sql)
+    consulta_sql = gerar_consulta_sql(pergunta)
 
-        # Faz a chamada à API com o prompt formatado
-        chat_completion = client.chat.completions.create(
-            messages=[
-                {
-                    "role": "system",
-                    "content": prompt_formatado
-                },
-                {
-                    "role": "user",
-                    "content": question,
-                }
-            ],
-            model="llama-3.3-70b-versatile",
-        )
+    prompt_format = prompt.format(pergunta=pergunta, resultado=consulta_sql)
+    resposta = llm.invoke([HumanMessage(content=prompt_format)])
 
-        # Retorna apenas o conteúdo da resposta
-        return chat_completion.choices[0].message.content
+    return resposta.content
+
+

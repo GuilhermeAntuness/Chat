@@ -1,6 +1,6 @@
 import os
 
-from groq import Groq
+from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
 from dotenv import load_dotenv
 
@@ -17,7 +17,8 @@ llm_gemini = ChatGoogleGenerativeAI(
 )
 
 
-client = Groq(
-    # This is the default and can be omitted
-    api_key=os.getenv('KEY_GROQ'),
+llm = ChatGroq(
+    api_key=key_grok,
+    model_name="llama3-70b-8192",
+    temperature=0.7
 )
