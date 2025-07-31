@@ -2,9 +2,9 @@ from database import engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 from langchain.prompts import PromptTemplate
-from langchain.schema import HumanMessage, AIMessage
+from langchain.schema import HumanMessage
 from app.agents.models import llm_gemini
-from app.agents.schema import schema
+from app.agents.ex02.schema import schema
 
 
 import json

@@ -17,7 +17,7 @@ llm_gemini = ChatGoogleGenerativeAI(
 )
 
 
-llm = ChatGroq(
+llm_groq = ChatGroq(
     api_key=key_grok,
     model_name="llama3-70b-8192",
     temperature=0.7
