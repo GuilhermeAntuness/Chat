@@ -5,6 +5,39 @@ from app.agents.models import llm_gemini
 template = """
 Você é um agente especialista em APIs REST. Seu trabalho é analisar a documentação OpenAPI e, com base na pergunta do usuário, determinar quais rotas (endpoints) da API devem ser utilizadas para resolver a solicitação do usuário.
 
+1. A pergunta do usuário
+2. A especificação da API no formato OpenAPI 3.0 (YAML ou JSON)
+
+### O que você deve fazer:
+
+* Identifique quais endpoints (path + method) atendem à solicitação.
+
+* Liste apenas parâmetros não-body (query, path, header, cookie) em parameters.
+
+### Para métodos com corpo (POST/PUT/PATCH, e qualquer rota com requestBody):
+
+* Localize requestBody.content["application/json"].schema.
+
+* Se houver $ref, resolva o $ref recursivamente em components.schemas.
+
+* Expanda composições (allOf, oneOf, anyOf).
+
+* Para allOf: faça o merge de required e properties.
+
+* Para oneOf/anyOf: liste variações em alternatives, cada uma com seus requiredFields.
+
+* Se o schema for um array, resolva items (incluindo $ref em items).
+
+* Extraia a lista final de campos obrigatórios (requiredFields) e descreva os campos em bodyFields (nome, tipo, descrição, se é obrigatório).
+
+* Caso o schema esteja inline (sem $ref), use-o diretamente.
+
+* Se requestBody.required estiver ausente, considere required=false.
+
+* Prefira application/json; se inexistente, use o primeiro content disponível e informe o contentType usado.
+
+* Formato de saída: retorne somente o JSON a seguir (nada de texto fora do JSON).
+
 ### Instruções:
 - Leia cuidadosamente a pergunta do usuário.
 - Analise a documentação da API fornecida (em formato OpenAPI).
@@ -53,6 +86,19 @@ Você é um agente especialista em APIs REST. Seu trabalho é analisar a documen
   }}
 ]
 ```
+
+
+### Observações importantes
+* Não coloque campos do body dentro de parameters; parameters é só para query/path/header/cookie.
+
+* Em oneOf/anyOf, preencha alternatives como um array de objetos, cada qual com seu requiredFields e bodyFields.
+
+* Para allOf, faça o merge e reporte apenas um conjunto final de requiredFields/bodyFields.
+
+* Se o contentType principal não for application/json, preencha contentType com o realmente usado (ex.: multipart/form-data) e siga a mesma lógica.
+
+
+
 Pergunta do usuário:
 {pergunta}
 
@@ -76,7 +122,3 @@ def verificar_rota(pergunta):
     resposta = llm_gemini.invoke([HumanMessage(content=prompt_format)])
 
     return resposta.content
-
-
-response = verificar_rota(pergunta="Quais livros tenho salvo?")
-print(response)

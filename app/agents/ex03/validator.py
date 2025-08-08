@@ -1,6 +1,6 @@
 from langchain.prompts import PromptTemplate
 from langchain.schema import HumanMessage
-from app.agents.models import llm_gemini_flash
+from app.agents.models import llm_gemini
 from route_checker import verificar_rota
 
 template = """
@@ -12,11 +12,16 @@ Verificar se todos os campos marcados como `required: true` na especificação O
 
 ## Instruções:
 1. Analise a(s) rota(s) e identifique os campos marcados como obrigatórios (`required: true`), tanto em `parameters` (query/path/header) quanto em `requestBody`, se aplicável.
+
+2. Muita atenção em rotas POST, PATCH, ou PUT. Requerem verificar a obrigatoriedade em components.schemas
+
 2. Verifique se esses campos aparecem na pergunta do usuário.
+
 3. Se **todos os campos obrigatórios estiverem presentes**, retorne:
 ```json
 {{ "validated": true }}
 ```
+
 4. Se algum campo obrigatório estiver ausente, retorne:
 ```json
 {{
@@ -24,9 +29,7 @@ Verificar se todos os campos marcados como `required: true` na especificação O
   "missing_fields": [
     {{
       "name": "nome_do_campo_faltante",
-      "in": "query/path/header/body",
-      "required": true,
-      "schema": {{ ... }}  // conforme aparece na OpenAPI
+      "required": true
     }},
     ...
   ]
@@ -38,14 +41,15 @@ Verificar se todos os campos marcados como `required: true` na especificação O
 {{ "validated": true }}
 ```
 
-### Responda apenas com o JSON final e não inclua explicações adicionais.
-
 
 Pergunta do usuário: 
 {pergunta}
 
 Rotas do sistema:
 {rota}
+
+Retorne apenas o JSON solicitado.
+
 """
 
 def verificar_filtros(pergunta):
@@ -57,9 +61,6 @@ def verificar_filtros(pergunta):
     rota = verificar_rota(pergunta)
 
     prompt_format = prompt.format(pergunta=pergunta, rota=rota)
-    resposta = llm_gemini_flash.invoke([HumanMessage(content=prompt_format)])
+    resposta = llm_gemini.invoke([HumanMessage(content=prompt_format)])
     return resposta.content, rota
-
-resposta = verificar_filtros(pergunta="Quantos livros tenho salvos?")
-print(resposta)
 
